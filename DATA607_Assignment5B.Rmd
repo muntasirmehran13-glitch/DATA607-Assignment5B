@@ -1,0 +1,94 @@
+---
+title: "DATA 607 Assignment 5B - ELO Calculations"
+author: "Muntasir Mehran"
+date: "2026-10-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Chess Tournament Data
+## Chess Tournament Data
+
+For this assignment, I am using the tournament data prepared in Project 1. The data includes each player's pre-tournament rating, actual tournament score, and the player numbers of their opponents.
+
+```{r}
+elo_data <- read.csv(
+  "C:/Users/munta/Documents/DATA607_Assignment5B/elo_data.csv"
+)
+
+head(elo_data)
+```
+## Opponent Ratings
+The opponent columns currently contain player numbers rather than ratings. I used those player numbers to look up each opponent's pre-tournament rating.
+
+```{r}
+for (i in 1:7) {
+  opponent_col <- paste0("Opponent_", i)
+  rating_col <- paste0("Opponent_Rating_", i)
+  
+  elo_data[[rating_col]] <- elo_data$Pre_Rating[
+    match(elo_data[[opponent_col]], elo_data$Player_Number)
+  ]
+}
+
+head(elo_data)
+```
+## Expected Scores
+```{r}
+for (i in 1:7) {
+  rating_col <- paste0("Opponent_Rating_", i)
+  expected_col <- paste0("Expected_", i)
+  
+  elo_data[[expected_col]] <- 1 / (
+    1 + 10^((elo_data[[rating_col]] - elo_data$Pre_Rating) / 400)
+  )
+}
+
+head(elo_data)
+```
+## Expected vs. Actual Performance
+```{r}
+expected_cols <- paste0("Expected_", 1:7)
+
+elo_data$Expected_Score <- rowSums(
+  elo_data[expected_cols],
+  na.rm = TRUE
+)
+
+elo_data$Performance_Difference <- 
+  elo_data$Total_Points - elo_data$Expected_Score
+
+performance <- elo_data[, c(
+  "Player_Name",
+  "Total_Points",
+  "Expected_Score",
+  "Performance_Difference"
+)]
+
+head(performance)
+```
+## Overperforming & Underperforming Players
+I was able to rank the players by the difference between their actual tournament score and their expected score. Positive differences showed  overperformance, wheras negative differences indicated underperformance.
+```{r}
+top_overperformers <- performance[
+  order(performance$Performance_Difference, decreasing = TRUE),
+][1:5, ]
+
+top_underperformers <- performance[
+  order(performance$Performance_Difference),
+][1:5, ]
+
+top_overperformers
+top_underperformers
+```
+
+## Summary/Conclusion
+  After revisting the Scores and ascertaining the ELO expectations, Aditya Bajaj had the biggest overperformance in the tournament. His expected score was about 1.95 points, whereas his actual score was 6.0, providing him a difference of around 4.05 points. Zachary James Houghton and Anvit Rao were the next biggest performances, suprassing their expectation by 3.13 - 3.06 points. 
+  The other part of the data points to Loren Schwiebert showing the biggest underperformance. His expected score was about 6.28 points as compared to the authentic score, 3.5.
+
+Reference: 
+ELO Formula Source: singingbanana. (2019, February 15). The Elo Rating System for Chess and Beyond [Video]. YouTube.
+
+^The expected score for each matchup was computed through the above ELO formula. 
